@@ -1,58 +1,138 @@
 import tkinter as tk
+from tkinter import ttk
 import psutil
 
-# Criar janela
+# =========================
+# CRIAR JANELA
+# =========================
+
 janela = tk.Tk()
 janela.title("DevBoard")
-janela.geometry("500x300")
-janela.configure(bg="white")
+janela.geometry("500x500")
+janela.configure(bg="black")
 
 
-# Criar textos (labels)
+# =========================
+# TÍTULO
+# =========================
+
+titulo = tk.Label(
+    janela,
+    text="DEVBOARD - Monitor do Sistema",
+    font=("Consolas", 20, "bold"),
+    fg="white",
+    bg="black"
+)
+titulo.pack(pady=15)
+
+
+# =========================
+# CPU
+# =========================
+
 cpu_label = tk.Label(
     janela,
     text="",
     font=("Arial", 18),
-    fg="red",
-    bg="white"
+    fg="lime",
+    bg="black"
 )
-cpu_label.pack(pady=20)
+cpu_label.pack(pady=10)
 
+cpu_bar = ttk.Progressbar(
+    janela,
+    length=300,
+    maximum=100
+)
+cpu_bar.pack()
+
+
+# =========================
+# RAM
+# =========================
 
 ram_label = tk.Label(
     janela,
     text="",
     font=("Arial", 18),
-    fg="red",
-    bg="white"
+    fg="cyan",
+    bg="black"
 )
-ram_label.pack(pady=20)
+ram_label.pack(pady=10)
+
+ram_bar = ttk.Progressbar(
+    janela,
+    length=300,
+    maximum=100
+)
+ram_bar.pack()
+
+
+# =========================
+# DISCO
+# =========================
 
 disk_label = tk.Label(
     janela,
     text="",
     font=("Arial", 18),
-    fg="red",
-    bg="white"
+    fg="yellow",
+    bg="black"
 )
-disk_label.pack(pady=20)
+disk_label.pack(pady=10)
 
-# Função que atualiza os dados
+disk_bar = ttk.Progressbar(
+    janela,
+    length=300,
+    maximum=100
+)
+disk_bar.pack()
+
+
+# =========================
+# FUNÇÃO DE ATUALIZAÇÃO
+# =========================
+
 def atualizar():
+    # pegar dados do sistema
     cpu = psutil.cpu_percent()
     ram = psutil.virtual_memory().percent
     disk = psutil.disk_usage("C:\\").percent
 
-    cpu_label.config(text=f"CPU: {cpu}%")
-    ram_label.config(text=f"RAM: {ram}%")
-    disk_label.config(text=f"Disco: {disk}%")
-    # Atualiza novamente em 1 segundo
+    # mudar cor da CPU conforme uso
+    if cpu < 50:
+        cor_cpu = "lime"
+    elif cpu < 80:
+        cor_cpu = "yellow"
+    else:
+        cor_cpu = "red"
+
+    # atualizar textos
+    cpu_label.config(
+        text=f"CPU: {cpu}%",
+        fg=cor_cpu
+    )
+
+    ram_label.config(
+        text=f"RAM: {ram}%"
+    )
+
+    disk_label.config(
+        text=f"Disco: {disk}%"
+    )
+
+    # atualizar barras
+    cpu_bar["value"] = cpu
+    ram_bar["value"] = ram
+    disk_bar["value"] = disk
+
+    # repetir a cada 1 segundo
     janela.after(1000, atualizar)
 
 
-# Começar atualização
+# =========================
+# INICIAR APP
+# =========================
+
 atualizar()
-
-
-# Manter a janela aberta
 janela.mainloop()
