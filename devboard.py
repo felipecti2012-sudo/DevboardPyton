@@ -10,8 +10,113 @@ import socket
 
 janela = tk.Tk()
 janela.title("DevBoard Ultimate")
-janela.geometry("700x850")
+janela.geometry("700x750")
 janela.configure(bg="black")
+
+# Pode redimensionar
+janela.resizable(True, True)
+
+
+# ==========================================
+# ÁREA COM SCROLL
+# ==========================================
+
+container = tk.Frame(janela, bg="black")
+container.pack(fill="both", expand=True)
+
+canvas = tk.Canvas(
+    container,
+    bg="black",
+    highlightthickness=0
+)
+
+scrollbar = ttk.Scrollbar(
+    container,
+    orient="vertical",
+    command=canvas.yview
+)
+
+conteudo = tk.Frame(
+    canvas,
+    bg="black"
+)
+
+canvas_window = canvas.create_window(
+    (0, 0),
+    window=conteudo,
+    anchor="nw"
+)
+
+
+def ajustar_scroll(event):
+    canvas.configure(
+        scrollregion=canvas.bbox("all")
+    )
+
+
+def ajustar_largura(event):
+    canvas.itemconfig(
+        canvas_window,
+        width=event.width
+    )
+
+
+conteudo.bind(
+    "<Configure>",
+    ajustar_scroll
+)
+
+canvas.bind(
+    "<Configure>",
+    ajustar_largura
+)
+
+canvas.configure(
+    yscrollcommand=scrollbar.set
+)
+
+canvas.pack(
+    side="left",
+    fill="both",
+    expand=True
+)
+
+scrollbar.pack(
+    side="right",
+    fill="y"
+)
+
+
+def scroll_mouse(event):
+    canvas.yview_scroll(
+        int(-1 * (event.delta / 120)),
+        "units"
+    )
+
+
+canvas.bind_all(
+    "<MouseWheel>",
+    scroll_mouse
+)
+
+
+# ==========================================
+# ESTILO DAS BARRAS
+# ==========================================
+
+style = ttk.Style()
+
+style.theme_use("clam")
+
+style.configure(
+    "Custom.Horizontal.TProgressbar",
+    troughcolor="#222222",
+    background="#4CAF50",
+    bordercolor="#222222",
+    lightcolor="#4CAF50",
+    darkcolor="#4CAF50",
+    thickness=12
+)
 
 
 # ==========================================
@@ -19,9 +124,9 @@ janela.configure(bg="black")
 # ==========================================
 
 titulo = tk.Label(
-    janela,
+    conteudo,
     text="DEVBOARD - Monitor Completo",
-    font=("Consolas", 20, "bold"),
+    font=("Segoe UI", 20, "bold"),
     fg="white",
     bg="black"
 )
@@ -33,23 +138,28 @@ titulo.pack(pady=15)
 # ==========================================
 
 def criar_bloco(cor):
-    """Cria um label e uma barra"""
+    """Cria um texto + barra"""
 
     label = tk.Label(
-        janela,
+        conteudo,
         text="",
-        font=("Arial", 14),
+        font=("Segoe UI", 13),
         fg=cor,
         bg="black"
     )
-    label.pack(pady=6)
+    label.pack(pady=(8, 4))
 
     barra = ttk.Progressbar(
-        janela,
-        length=350,
-        maximum=100
+        conteudo,
+        maximum=100,
+        style="Custom.Horizontal.TProgressbar"
     )
-    barra.pack()
+
+    barra.pack(
+        fill="x",
+        padx=60,
+        pady=(0, 8)
+    )
 
     return label, barra
 
@@ -76,9 +186,9 @@ cpu_label, cpu_bar = criar_bloco("lime")
 
 # Frequência da CPU
 freq_label = tk.Label(
-    janela,
+    conteudo,
     text="",
-    font=("Arial", 12),
+    font=("Segoe UI", 11),
     fg="white",
     bg="black"
 )
@@ -90,9 +200,9 @@ ram_label, ram_bar = criar_bloco("cyan")
 
 # Detalhes da RAM
 ram_info_label = tk.Label(
-    janela,
+    conteudo,
     text="",
-    font=("Arial", 12),
+    font=("Segoe UI", 11),
     fg="white",
     bg="black"
 )
@@ -108,9 +218,9 @@ disk_label, disk_bar = criar_bloco("yellow")
 
 # Detalhes do disco
 disk_info_label = tk.Label(
-    janela,
+    conteudo,
     text="",
-    font=("Arial", 12),
+    font=("Segoe UI", 11),
     fg="white",
     bg="black"
 )
@@ -126,9 +236,9 @@ network_label, network_bar = criar_bloco("magenta")
 
 # IP do computador
 ip_label = tk.Label(
-    janela,
+    conteudo,
     text="",
-    font=("Arial", 12),
+    font=("Segoe UI", 11),
     fg="white",
     bg="black"
 )
@@ -141,9 +251,10 @@ ip_label.pack(pady=2)
 
 old_net = psutil.net_io_counters()
 
-# Pegando IP só uma vez
 try:
-    ip_local = socket.gethostbyname(socket.gethostname())
+    ip_local = socket.gethostbyname(
+        socket.gethostname()
+    )
 except:
     ip_local = "Indisponível"
 
@@ -173,6 +284,7 @@ def atualizar():
         text=f"CPU: {cpu}%",
         fg=cor_cpu
     )
+
     cpu_bar["value"] = cpu
 
     if freq:
@@ -198,10 +310,7 @@ def atualizar():
     )
 
     ram_info_label.config(
-        text=(
-            f"Total: {bytes_para_gb(ram.total):.1f} GB | "
-            f"Livre: {bytes_para_gb(ram.available):.1f} GB"
-        )
+        text=f"Total: {bytes_para_gb(ram.total):.1f} GB | Livre: {bytes_para_gb(ram.available):.1f} GB"
     )
 
     # ----------------------
@@ -231,10 +340,7 @@ def atualizar():
     )
 
     disk_info_label.config(
-        text=(
-            f"Total: {bytes_para_gb(disk.total):.1f} GB | "
-            f"Livre: {bytes_para_gb(disk.free):.1f} GB"
-        )
+        text=f"Total: {bytes_para_gb(disk.total):.1f} GB | Livre: {bytes_para_gb(disk.free):.1f} GB"
     )
 
     # ----------------------
@@ -243,7 +349,7 @@ def atualizar():
 
     battery = psutil.sensors_battery()
 
-    if battery is not None:
+    if battery:
         atualizar_bloco(
             battery_label,
             battery_bar,
@@ -273,7 +379,10 @@ def atualizar():
     ) / 1024
 
     velocidade = enviados + recebidos
-    porcentagem = min(velocidade / 1000 * 100, 100)
+    porcentagem = min(
+        velocidade / 1000 * 100,
+        100
+    )
 
     atualizar_bloco(
         network_label,
@@ -286,7 +395,6 @@ def atualizar():
         text=f"IP: {ip_local}"
     )
 
-    # Guarda valor atual da rede
     old_net = new_net
 
     # Atualiza novamente em 1 segundo
