@@ -1,21 +1,22 @@
 import tkinter as tk
 from tkinter import ttk
 import psutil
+import socket
 
 
-# =========================
-# Janela principal
-# =========================
+# ==========================================
+# CONFIGURAÇÃO DA JANELA
+# ==========================================
 
 janela = tk.Tk()
 janela.title("DevBoard Ultimate")
-janela.geometry("600x750")
+janela.geometry("700x850")
 janela.configure(bg="black")
 
 
-# =========================
-# Título do app
-# =========================
+# ==========================================
+# TÍTULO PRINCIPAL
+# ==========================================
 
 titulo = tk.Label(
     janela,
@@ -27,12 +28,13 @@ titulo = tk.Label(
 titulo.pack(pady=15)
 
 
-# =========================
-# Função para criar cada bloco
-# (texto + barra de progresso)
-# =========================
+# ==========================================
+# FUNÇÕES AUXILIARES
+# ==========================================
 
 def criar_bloco(cor):
+    """Cria um label e uma barra"""
+
     label = tk.Label(
         janela,
         text="",
@@ -52,40 +54,114 @@ def criar_bloco(cor):
     return label, barra
 
 
-# =========================
-# Criando os componentes
-# que vão aparecer na tela
-# =========================
+def atualizar_bloco(label, barra, texto, valor):
+    """Atualiza texto e barra"""
 
+    label.config(text=texto)
+    barra["value"] = valor
+
+
+def bytes_para_gb(valor):
+    """Converte bytes para GB"""
+
+    return valor / (1024 ** 3)
+
+
+# ==========================================
+# COMPONENTES DA TELA
+# ==========================================
+
+# CPU
 cpu_label, cpu_bar = criar_bloco("lime")
+
+# Frequência da CPU
+freq_label = tk.Label(
+    janela,
+    text="",
+    font=("Arial", 12),
+    fg="white",
+    bg="black"
+)
+freq_label.pack(pady=2)
+
+
+# RAM
 ram_label, ram_bar = criar_bloco("cyan")
+
+# Detalhes da RAM
+ram_info_label = tk.Label(
+    janela,
+    text="",
+    font=("Arial", 12),
+    fg="white",
+    bg="black"
+)
+ram_info_label.pack(pady=2)
+
+
+# SWAP
 swap_label, swap_bar = criar_bloco("deepskyblue")
+
+
+# DISCO
 disk_label, disk_bar = criar_bloco("yellow")
+
+# Detalhes do disco
+disk_info_label = tk.Label(
+    janela,
+    text="",
+    font=("Arial", 12),
+    fg="white",
+    bg="black"
+)
+disk_info_label.pack(pady=2)
+
+
+# BATERIA
 battery_label, battery_bar = criar_bloco("orange")
+
+
+# REDE
 network_label, network_bar = criar_bloco("magenta")
 
+# IP do computador
+ip_label = tk.Label(
+    janela,
+    text="",
+    font=("Arial", 12),
+    fg="white",
+    bg="black"
+)
+ip_label.pack(pady=2)
 
-# =========================
-# Guardando dados antigos
-# da rede para calcular
-# velocidade em tempo real
-# =========================
+
+# ==========================================
+# VARIÁVEIS DE CONTROLE
+# ==========================================
 
 old_net = psutil.net_io_counters()
 
+# Pegando IP só uma vez
+try:
+    ip_local = socket.gethostbyname(socket.gethostname())
+except:
+    ip_local = "Indisponível"
 
-# =========================
-# Função principal que
-# atualiza tudo sozinho
-# =========================
+
+# ==========================================
+# LOOP PRINCIPAL
+# ==========================================
 
 def atualizar():
     global old_net
 
-    # Pegando uso atual da CPU
-    cpu = psutil.cpu_percent()
+    # ----------------------
+    # CPU
+    # ----------------------
 
-    # Mudando a cor dependendo do uso
+    cpu = psutil.cpu_percent(interval=None)
+    freq = psutil.cpu_freq()
+
     if cpu < 50:
         cor_cpu = "lime"
     elif cpu < 80:
@@ -93,73 +169,133 @@ def atualizar():
     else:
         cor_cpu = "red"
 
-    # Atualiza texto e barra da CPU
     cpu_label.config(
         text=f"CPU: {cpu}%",
         fg=cor_cpu
     )
     cpu_bar["value"] = cpu
 
-    # Pegando dados da memória RAM
+    if freq:
+        freq_label.config(
+            text=f"CPU Freq: {freq.current:.0f} MHz"
+        )
+    else:
+        freq_label.config(
+            text="CPU Freq: Indisponível"
+        )
+
+    # ----------------------
+    # RAM
+    # ----------------------
+
     ram = psutil.virtual_memory()
-    ram_label.config(
-        text=f"RAM: {ram.percent}%"
-    )
-    ram_bar["value"] = ram.percent
 
-    # Pegando memória virtual (swap)
+    atualizar_bloco(
+        ram_label,
+        ram_bar,
+        f"RAM: {ram.percent}%",
+        ram.percent
+    )
+
+    ram_info_label.config(
+        text=(
+            f"Total: {bytes_para_gb(ram.total):.1f} GB | "
+            f"Livre: {bytes_para_gb(ram.available):.1f} GB"
+        )
+    )
+
+    # ----------------------
+    # SWAP
+    # ----------------------
+
     swap = psutil.swap_memory()
-    swap_label.config(
-        text=f"SWAP: {swap.percent}%"
-    )
-    swap_bar["value"] = swap.percent
 
-    # Pegando uso do disco principal
+    atualizar_bloco(
+        swap_label,
+        swap_bar,
+        f"SWAP: {swap.percent}%",
+        swap.percent
+    )
+
+    # ----------------------
+    # DISCO
+    # ----------------------
+
     disk = psutil.disk_usage("C:\\")
-    disk_label.config(
-        text=f"Disco: {disk.percent}%"
-    )
-    disk_bar["value"] = disk.percent
 
-    # Verifica se existe bateria
+    atualizar_bloco(
+        disk_label,
+        disk_bar,
+        f"Disco: {disk.percent}%",
+        disk.percent
+    )
+
+    disk_info_label.config(
+        text=(
+            f"Total: {bytes_para_gb(disk.total):.1f} GB | "
+            f"Livre: {bytes_para_gb(disk.free):.1f} GB"
+        )
+    )
+
+    # ----------------------
+    # BATERIA
+    # ----------------------
+
     battery = psutil.sensors_battery()
 
-    if battery:
-        battery_label.config(
-            text=f"Bateria: {battery.percent}%"
+    if battery is not None:
+        atualizar_bloco(
+            battery_label,
+            battery_bar,
+            f"Bateria: {battery.percent}%",
+            battery.percent
         )
-        battery_bar["value"] = battery.percent
     else:
-        battery_label.config(
-            text="Bateria: Não disponível"
+        atualizar_bloco(
+            battery_label,
+            battery_bar,
+            "Bateria: Não disponível",
+            0
         )
-        battery_bar["value"] = 0
 
-    # Monitorando tráfego da internet
+    # ----------------------
+    # REDE
+    # ----------------------
+
     new_net = psutil.net_io_counters()
 
-    enviados = (new_net.bytes_sent - old_net.bytes_sent) / 1024
-    recebidos = (new_net.bytes_recv - old_net.bytes_recv) / 1024
+    enviados = (
+        new_net.bytes_sent - old_net.bytes_sent
+    ) / 1024
+
+    recebidos = (
+        new_net.bytes_recv - old_net.bytes_recv
+    ) / 1024
 
     velocidade = enviados + recebidos
     porcentagem = min(velocidade / 1000 * 100, 100)
 
-    network_label.config(
-        text=f"Rede: ↑{enviados:.1f} KB ↓{recebidos:.1f} KB"
+    atualizar_bloco(
+        network_label,
+        network_bar,
+        f"Rede: ↑{enviados:.1f} KB ↓{recebidos:.1f} KB",
+        porcentagem
     )
-    network_bar["value"] = porcentagem
 
-    # Atualiza valor antigo da rede
+    ip_label.config(
+        text=f"IP: {ip_local}"
+    )
+
+    # Guarda valor atual da rede
     old_net = new_net
 
-    # Atualiza tudo de novo
-    # depois de 1 segundo
+    # Atualiza novamente em 1 segundo
     janela.after(1000, atualizar)
 
 
-# =========================
-# Iniciando o monitor
-# =========================
+# ==========================================
+# INICIAR APP
+# ==========================================
 
 atualizar()
 janela.mainloop()
